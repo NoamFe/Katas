@@ -1,67 +1,48 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Algorithm
 {
     public class Finder
     {
-        private readonly List<Thing> _p;
+        private readonly List<Person> _persons;
 
-        public Finder(List<Thing> p)
+        public Finder(List<Person> persons)
         {
-            _p = p;
+            _persons = persons;
         }
 
-        public F Find(FT ft)
+        public Result Find(TimeSpanFilter timeSpanFilter)
         {
-            var tr = new List<F>();
+            if (_persons.Count < 2)
+                return new Result();
 
-            for(var i = 0; i < _p.Count - 1; i++)
+            if (_persons.Count == 2)
+                return new Result { Person1 = _persons[0], Person2 = _persons[1] };
+
+
+            var orderedByBirthday = _persons.OrderBy(e => e.BirthDate).ToList();
+
+            return timeSpanFilter == TimeSpanFilter.Furthest ?
+                new Result() { Person1 = orderedByBirthday.FirstOrDefault(), Person2 = orderedByBirthday.Last() }
+                : FindClosest(orderedByBirthday);
+        }
+
+        private static Result FindClosest(IList<Person> orderedByBirthday)
+        {
+            var result = new Result() { Person1 = orderedByBirthday[0], Person2 = orderedByBirthday[1] };
+
+            for (var i = 1; i < orderedByBirthday.Count - 1; i++)
             {
-                for(var j = i + 1; j < _p.Count; j++)
+                var next = new Result() { Person1 = orderedByBirthday[i], Person2 = orderedByBirthday[i + 1] };
+                if (result.TimeGap > next.TimeGap)
                 {
-                    var r = new F();
-                    if(_p[i].BirthDate < _p[j].BirthDate)
-                    {
-                        r.P1 = _p[i];
-                        r.P2 = _p[j];
-                    }
-                    else
-                    {
-                        r.P1 = _p[j];
-                        r.P2 = _p[i];
-                    }
-                    r.D = r.P2.BirthDate - r.P1.BirthDate;
-                    tr.Add(r);
+                    result = next;
                 }
             }
 
-            if(tr.Count < 1)
-            {
-                return new F();
-            }
-
-            F answer = tr[0];
-            foreach(var result in tr)
-            {
-                switch(ft)
-                {
-                    case FT.One:
-                        if(result.D < answer.D)
-                        {
-                            answer = result;
-                        }
-                        break;
-
-                    case FT.Two:
-                        if(result.D > answer.D)
-                        {
-                            answer = result;
-                        }
-                        break;
-                }
-            }
-
-            return answer;
+            return result;
         }
     }
 }
